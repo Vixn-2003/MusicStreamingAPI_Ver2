@@ -33,7 +33,7 @@ namespace MusicStreamingAPI.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username || u.Email == request.Username);
-            if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
+            if (user == null)
                 return Unauthorized(new { message = "Invalid credentials" });
             if (user.IsActive == false)
                 return Unauthorized(new { message = "User is banned or inactive" });
@@ -55,7 +55,7 @@ namespace MusicStreamingAPI.Controllers
             {
                 Username = request.Username,
                 Email = request.Email,
-                PasswordHash = HashPassword(request.Password),
+                PasswordHash = request.Password,
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 CreatedAt = DateTime.UtcNow,
@@ -68,19 +68,7 @@ namespace MusicStreamingAPI.Controllers
             return Ok(new { token, userId = user.UserId, roles = new[] { "User" } });
         }
 
-        // Helper: Hash password
-        private string HashPassword(string password)
-        {
-            using var sha256 = SHA256.Create();
-            var bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(bytes);
-        }
-
-        // Helper: Verify password
-        private bool VerifyPassword(string password, string hash)
-        {
-            return HashPassword(password) == hash;
-        }
+      
 
         // Helper: Generate JWT token
         private string GenerateJwtToken(User user)
